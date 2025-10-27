@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Leaderboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .debug-container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .console { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin: 20px 0; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #dee2e6; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1>🔍 Leaderboard Debug Tool</h1>
+        
+        <div id="status" class="status info">Initializing...</div>
+        
+        <button onclick="testDataLoad()">Test Data Loading</button>
+        <button onclick="testLeaderboard()">Test Leaderboard</button>
+        <button onclick="clearConsole()">Clear Console</button>
+        
+        <div id="console" class="console"></div>
+        
+        <h2>Leaderboard Preview</h2>
+        <div id="leaderboard"></div>
+    </div>
+
+    <script>
+        let participantsData = [];
+        let filteredData = [];
+        
+        function log(message) {
+            const console = document.getElementById('console');
+            const timestamp = new Date().toLocaleTimeString();
+            console.textContent += `[${timestamp}] ${message}\n`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function clearConsole() {
+            document.getElementById('console').textContent = '';
+        }
+        
+        async function testDataLoad() {
+            log('Starting data load test...');
+            updateStatus('Loading data...', 'info');
+            
+            try {
+                const response = await fetch('participants_data.json');
+                log(`Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                log(`Data loaded: ${data.length} participants`);
+                log(`First participant: ${JSON.stringify(data[0])}`);
+                
+                participantsData = data;
+                filteredData = [...participantsData];
+                
+                updateStatus(`✅ Data loaded successfully: ${data.length} participants`, 'success');
+                return true;
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+                updateStatus(`❌ Error loading data: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        function testLeaderboard() {
+            log('Testing leaderboard update...');
+            updateStatus('Updating leaderboard...', 'info');
+            
+            if (participantsData.length === 0) {
+                log('❌ No data available for leaderboard');
+                updateStatus('❌ No data available', 'error');
+                return;
+            }
+            
+            const leaderboard = document.getElementById('leaderboard');
+            const sortedData = [...filteredData].sort((a, b) => b.Badges - a.Badges);
+            
+            let html = '<table><thead><tr><th>Rank</th><th>Name</th><th>Badges</th><th>Progress</th></tr></thead><tbody>';
+            
+            sortedData.slice(0, 10).forEach((participant, index) => {
+                html += `<tr>
+                    <td>#${index + 1}</td>
+                    <td>${participant.Name}</td>
+                    <td>${participant.Badges}/20</td>
+                    <td>${participant.Progress}%</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            leaderboard.innerHTML = html;
+            
+            log(`✅ Leaderboard updated with ${sortedData.length} participants`);
+            updateStatus(`✅ Leaderboard updated: ${sortedData.length} participants`, 'success');
+        }
+        
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            log('Page loaded, starting auto-test...');
+            testDataLoad().then(success => {
+                if (success) {
+                    setTimeout(() => testLeaderboard(), 500);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .console-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Leaderboard Debug Test</h1>
+        
+        <div class="status info">
+            <strong>Instructions:</strong> Open this file in a web browser and check the console for debug messages. 
+            The leaderboard should load and display participant data.
+        </div>
+        
+        <button class="test-button" onclick="testDataLoading()">Test Data Loading</button>
+        <button class="test-button" onclick="testLeaderboardUpdate()">Test Leaderboard Update</button>
+        <button class="test-button" onclick="clearConsole()">Clear Console</button>
+        
+        <div id="status"></div>
+        <div id="console-output" class="console-output"></div>
+        
+        <h2>Leaderboard Preview</h2>
+        <div id="leaderboard-preview"></div>
+    </div>
+
+    <script>
+        // Capture console output
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToConsole(message, type = 'log') {
+            const consoleOutput = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#dc3545' : type === 'warn' ? '#ffc107' : '#28a745';
+            consoleOutput.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+        
+        async function testDataLoading() {
+            updateStatus('Testing data loading...', 'info');
+            try {
+                const response = await fetch('participants_data.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const data = await response.json();
+                console.log('Data loaded successfully:', data.length, 'participants');
+                updateStatus(`✅ Data loaded successfully: ${data.length} participants`, 'success');
+                return data;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateStatus(`❌ Error loading data: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        async function testLeaderboardUpdate() {
+            updateStatus('Testing leaderboard update...', 'info');
+            try {
+                const data = await testDataLoading();
+                if (data) {
+                    // Simulate the leaderboard update
+                    const preview = document.getElementById('leaderboard-preview');
+                    preview.innerHTML = `
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                            <thead>
+                                <tr style="background: #f8f9fa;">
+                                    <th style="padding: 10px; border: 1px solid #dee2e6;">Rank</th>
+                                    <th style="padding: 10px; border: 1px solid #dee2e6;">Name</th>
+                                    <th style="padding: 10px; border: 1px solid #dee2e6;">Badges</th>
+                                    <th style="padding: 10px; border: 1px solid #dee2e6;">Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.slice(0, 10).map((participant, index) => `
+                                    <tr>
+                                        <td style="padding: 10px; border: 1px solid #dee2e6;">#${index + 1}</td>
+                                        <td style="padding: 10px; border: 1px solid #dee2e6;">${participant.Name}</td>
+                                        <td style="padding: 10px; border: 1px solid #dee2e6;">${participant.Badges}/20</td>
+                                        <td style="padding: 10px; border: 1px solid #dee2e6;">${participant.Progress}%</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    updateStatus('✅ Leaderboard preview generated successfully', 'success');
+                }
+            } catch (error) {
+                console.error('Error testing leaderboard:', error);
+                updateStatus(`❌ Error testing leaderboard: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            console.log('Test page loaded');
+            updateStatus('Test page ready. Click buttons to test functionality.', 'info');
+        });
+    </script>
+</body>
+</html>
