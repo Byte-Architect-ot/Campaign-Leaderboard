@@ -20,6 +20,18 @@ def process_excel_to_json():
         
         # Clean column names
         df.columns = df.columns.str.strip()
+
+        # Prepare badge counts strictly from the Excel column
+        badge_col_candidates = [
+            '# of Skill Badges Completed',
+            'Number of Skill Badges Completed'
+        ]
+        badge_col = next((c for c in badge_col_candidates if c in df.columns), None)
+        if badge_col is None:
+            print("Warning: Badge count column not found. Defaulting badges to 0.")
+            badge_series = pd.Series([0] * len(df))
+        else:
+            badge_series = pd.to_numeric(df[badge_col], errors='coerce').fillna(0).astype(int)
         
         # Convert to dictionary format
         participants = []
@@ -31,13 +43,8 @@ def process_excel_to_json():
             # Extract email
             email = str(row['User Email']) if pd.notna(row['User Email']) else ''
             
-            # Extract badge count - try different columns
-            badges = 0
-            if '# of Skill Badges Completed' in df.columns and pd.notna(row['# of Skill Badges Completed']):
-                try:
-                    badges = int(row['# of Skill Badges Completed'])
-                except:
-                    badges = 0
+            # Use coerced numeric badge count from the Excel column
+            badges = int(badge_series.iloc[index])
             
             # Calculate progress based on badges (assuming 20 is max)
             progress = min(100, (badges / 20) * 100) if badges > 0 else 0
