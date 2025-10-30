@@ -220,7 +220,7 @@
                 console.log('Loading JSON data automatically...');
                 
                 // Try to fetch the processed JSON file first
-                const response = await fetch('participants_data.json');
+                const response = await fetch(`participants_data.json?ts=${Date.now()}`, { cache: 'no-store' });
                 if (!response.ok) {
                     throw new Error('JSON file not found, trying Excel...');
                 }
@@ -266,7 +266,7 @@
         async function loadCSVDataFallback() {
             try {
                 console.log('Trying to load processed CSV data...');
-                const response = await fetch('participants_data_processed.csv');
+                const response = await fetch(`participants_data_processed.csv?ts=${Date.now()}`, { cache: 'no-store' });
                 const csvText = await response.text();
                 console.log('CSV text loaded:', csvText.substring(0, 200) + '...');
                 
