@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/participants_data.json",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
+      "source": "/participants_data_processed.csv",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    }
+  ],
+  "routes": [
+    { "src": "/participants_data\\.json", "dest": "/participants_data.json" },
+    { "src": "/participants_data_processed\\.csv", "dest": "/participants_data_processed.csv" },
+    { "src": "/(index\\.html)?", "dest": "/index.html" },
+    { "src": "/$", "dest": "/index.html" }
+  ]
+}
+
+
