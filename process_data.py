@@ -32,6 +32,10 @@ def process_excel_to_json():
             badge_series = pd.Series([0] * len(df))
         else:
             badge_series = pd.to_numeric(df[badge_col], errors='coerce').fillna(0).astype(int)
+
+        # Add badges to DataFrame and sort by it (descending)
+        df['__Badges'] = badge_series
+        df = df.sort_values('__Badges', ascending=False).reset_index(drop=True)
         
         # Convert to dictionary format
         participants = []
@@ -43,16 +47,18 @@ def process_excel_to_json():
             # Extract email
             email = str(row['User Email']) if pd.notna(row['User Email']) else ''
             
-            # Use coerced numeric badge count from the Excel column
-            badges = int(badge_series.iloc[index])
+            # Use coerced numeric badge count from the sorted DataFrame
+            badges = int(row['__Badges'])
             
-            # Calculate progress based on badges (assuming 20 is max)
-            progress = min(100, (badges / 20) * 100) if badges > 0 else 0
+            # Modules completed are out of 20 and directly tied to badges
+            modules_completed = int(min(20, max(0, badges)))
             
-            # Generate some realistic data for demonstration
+            # Calculate progress based on modules completed (out of 20)
+            progress = int((modules_completed / 20) * 100) if modules_completed > 0 else 0
+            
+            # Generate additional metrics
             streak = max(1, min(30, badges * 2)) if badges > 0 else 1
             total_hours = badges * 2.5 if badges > 0 else 0.5
-            modules_completed = min(5, (badges // 4) + 1) if badges > 0 else 1
             
             participant = {
                 'Name': name,
@@ -70,8 +76,7 @@ def process_excel_to_json():
             
             participants.append(participant)
         
-        # Sort by badges (descending) and update ranks
-        participants.sort(key=lambda x: x['Badges'], reverse=True)
+        # Update ranks based on already-sorted order
         for i, participant in enumerate(participants):
             participant['Rank'] = i + 1
         
