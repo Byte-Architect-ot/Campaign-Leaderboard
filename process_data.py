@@ -20,22 +20,6 @@ def process_excel_to_json():
         
         # Clean column names
         df.columns = df.columns.str.strip()
-
-        # Prepare badge counts strictly from the Excel column
-        badge_col_candidates = [
-            '# of Skill Badges Completed',
-            'Number of Skill Badges Completed'
-        ]
-        badge_col = next((c for c in badge_col_candidates if c in df.columns), None)
-        if badge_col is None:
-            print("Warning: Badge count column not found. Defaulting badges to 0.")
-            badge_series = pd.Series([0] * len(df))
-        else:
-            badge_series = pd.to_numeric(df[badge_col], errors='coerce').fillna(0).astype(int)
-
-        # Add badges to DataFrame and sort by it (descending)
-        df['__Badges'] = badge_series
-        df = df.sort_values('__Badges', ascending=False).reset_index(drop=True)
         
         # Convert to dictionary format
         participants = []
@@ -47,8 +31,13 @@ def process_excel_to_json():
             # Extract email
             email = str(row['User Email']) if pd.notna(row['User Email']) else ''
             
-            # Use coerced numeric badge count from the sorted DataFrame
-            badges = int(row['__Badges'])
+            # Extract badge count - try different columns
+            badges = 0
+            if '# of Skill Badges Completed' in df.columns and pd.notna(row['# of Skill Badges Completed']):
+                try:
+                    badges = int(row['# of Skill Badges Completed'])
+                except:
+                    badges = 0
             
             # Modules completed are out of 20 and directly tied to badges
             modules_completed = int(min(20, max(0, badges)))
